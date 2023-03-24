@@ -34,9 +34,9 @@ func SipPlay(data *Streams) (*Streams, error) {
 
 	default:
 		// 推流模式要求设备在线且活跃
-		if time.Now().Unix()-channel.Active > 30*60 || channel.Status != m.DeviceStatusON {
-			return nil, errors.New("通道已离线")
-		}
+		//if time.Now().Unix()-channel.Active > 30*60 || channel.Status != m.DeviceStatusON {
+		//	return nil, errors.New("通道已离线")
+		//}
 		user, ok := _activeDevices.Get(channel.DeviceID)
 		if !ok {
 			return nil, errors.New("设备已离线")

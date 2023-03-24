@@ -1,7 +1,9 @@
 package m
 
 import (
+	"github.com/panjjo/gosip/utils"
 	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -100,14 +102,21 @@ func LoadConfig() {
 	logrus.Infof("config :%+v", MConfig)
 	level, _ := logrus.ParseLevel(MConfig.LogLevel)
 	logrus.SetLevel(level)
+	logrus.SetOutput(os.Stdout)
+	//Log file segmentation hook
+	hook := utils.NewLfsHook(time.Duration(7)*time.Hour, 60, "./logs", "gosip")
+	logrus.AddHook(hook)
 	db.DBClient, err = db.Open(MConfig.DB)
 	if err != nil {
 		logrus.Fatalln("init db error:", err)
 	}
+	db.DBClient.DB().SetMaxIdleConns(25)
+	db.DBClient.DB().SetMaxOpenConns(100)
+
 	db.DBClient.SetNowFuncOverride(func() interface{} {
 		return time.Now().Unix()
 	})
-	db.DBClient.LogMode(true)
+	//db.DBClient.LogMode(true)
 	go db.KeepLive(db.DBClient, time.Minute)
 
 	MConfig.MOD = strings.ToUpper(MConfig.MOD)

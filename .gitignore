@@ -2,3 +2,7 @@
 srv
 .idea
 gosip
+/bin/
+/release/
+/log/
+/logs/

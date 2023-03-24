@@ -57,6 +57,8 @@ type Devices struct {
 	PWD string `json:"pwd" gorm:"column:pwd"`
 	// Source
 	Source string `json:"source"  gorm:"column:source"`
+	//离线时间
+	OfflineAt int64 `json:"offlinetime" gorm:"column:offlinetime"`
 
 	Sys m.SysInfo `json:"sysinfo" gorm:"-"`
 
@@ -104,12 +106,18 @@ type Channels struct {
 	StreamType string `json:"streamtype"  gorm:"column:streamtype"`
 	// streamtype=pull时，拉流地址
 	URL string `json:"url"  gorm:"column:url"`
+	// Longitude
+	// Latitude
+	//经度
+	Longitude float64 `xml:"Longitude" json:"longitude"  gorm:"column:longitude"`
+	//纬度
+	Latitude float64 `xml:"Latitude" json:"latitude"  gorm:"column:latitude"`
 
 	addr *sip.Address `gorm:"-"`
 }
 
-// 同步摄像头编码格式
-func SyncDevicesCodec(ssrc, deviceid string) {
+// SyncDevicesCodec 同步摄像头编码格式
+func SyncDevicesCodec(ssrc, deviceId string) {
 	resp := zlmGetMediaList(zlmGetMediaListReq{streamID: ssrc})
 	if resp.Code != 0 {
 		logrus.Errorln("syncDevicesCodec fail", ssrc, resp)
@@ -127,7 +135,7 @@ func SyncDevicesCodec(ssrc, deviceid string) {
 		for _, track := range data.Tracks {
 			if track.Type == 0 {
 				// 视频
-				device := Channels{DeviceID: deviceid}
+				device := Channels{DeviceID: deviceId}
 				if err := db.Get(db.DBClient, &device); err == nil {
 					device.VF = transZLMDeviceVF(track.CodecID)
 					device.Height = track.Height
@@ -135,7 +143,7 @@ func SyncDevicesCodec(ssrc, deviceid string) {
 					device.FPS = track.FPS
 					db.Save(db.DBClient, &device)
 				} else {
-					logrus.Errorln("syncDevicesCodec deviceid not found,deviceid:", deviceid)
+					logrus.Errorln("syncDevicesCodec deviceid not found,deviceid:", deviceId)
 				}
 			}
 		}
@@ -143,7 +151,7 @@ func SyncDevicesCodec(ssrc, deviceid string) {
 }
 
 // 从请求中解析出设备信息
-func parserDevicesFromReqeust(req *sip.Request) (Devices, bool) {
+func parserDevicesFromRequest(req *sip.Request) (Devices, bool) {
 	u := Devices{}
 	header, ok := req.From()
 	if !ok {
@@ -208,7 +216,14 @@ func sipCatalog(to Devices) {
 	hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
 		Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
 	}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.MESSAGE)
+
+	//fHost, fPort, _ := sip.ParseHostPort(to.source.String())
+	//sourAddr := sip.Address{URI: &sip.URI{FUser: to.addr.URI.FUser, FHost: fHost, FPort: fPort}, Params: to.addr.Params, DisplayName: to.addr.DisplayName}
+	//hb := sip.NewHeaderBuilder().SetTo(&sourAddr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//	Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}).Add("rport", sip.String{Str: "7036"}),
+	//}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.MESSAGE)
 	req := sip.NewRequest("", sip.MESSAGE, to.addr.URI, sip.DefaultSipVersion, hb.Build(), sip.GetCatalogXML(to.DeviceID))
+	//req := sip.NewRequest("", sip.MESSAGE, sourAddr.URI, sip.DefaultSipVersion, hb.Build(), sip.GetCatalogXML(to.DeviceID))
 	req.SetDestination(to.source)
 	tx, err := srv.Request(req)
 	if err != nil {
@@ -218,6 +233,44 @@ func sipCatalog(to Devices) {
 	_, err = sipResponse(tx)
 	if err != nil {
 		logrus.Warnln("sipCatalog  response error,", err)
+		return
+	}
+}
+
+// sipDeviceBasicConfig 获取注册设备包含的列表
+func sipConfigDownload(to Devices) {
+	hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+		Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
+	}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.MESSAGE)
+	req := sip.NewRequest("", sip.MESSAGE, to.addr.URI, sip.DefaultSipVersion, hb.Build(), sip.GetConfigDownloadInfoXML(to.DeviceID))
+	req.SetDestination(to.source)
+	tx, err := srv.Request(req)
+	if err != nil {
+		logrus.Warnln("sipConfigDownload  error,", err)
+		return
+	}
+	_, err = sipResponse(tx)
+	if err != nil {
+		logrus.Warnln("sipConfigDownload  response error,", err)
+		return
+	}
+}
+
+// sipMobilePosition 获取移动设备Gps位置信息
+func sipMobilePosition(to Devices) {
+	hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+		Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
+	}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.SUBSCRIBE)
+	req := sip.NewRequest("", sip.SUBSCRIBE, to.addr.URI, sip.DefaultSipVersion, hb.Build(), sip.GetMobilePositionInfoXML(to.DeviceID))
+	req.SetDestination(to.source)
+	tx, err := srv.Request(req)
+	if err != nil {
+		logrus.Warnln("sipMobilePosition  error,", err)
+		return
+	}
+	_, err = sipResponse(tx)
+	if err != nil {
+		logrus.Warnln("sipMobilePosition  response error,", err)
 		return
 	}
 }
@@ -282,10 +335,31 @@ func sipMessageCatalog(u Devices, body []byte) error {
 				channel.SafetyWay = d.SafetyWay
 				channel.RegisterWay = d.RegisterWay
 				channel.Secrecy = d.Secrecy
+				channel.Longitude = d.Longitude
+				channel.Latitude = d.Latitude
 				db.Save(db.DBClient, &channel)
-				go notify(notifyChannelsActive(channel))
+				//go notify(notifyChannelsActive(channel))
 			} else {
-				logrus.Infoln("deviceid not found,deviceid:", d.DeviceID, "pdid:", message.DeviceID, "err", err)
+				logrus.Infoln("deviceid not found,deviceid:", d.DeviceID, "pdid:", message.DeviceID, "err: ", err)
+				channel.Active = time.Now().Unix()
+				channel.URIStr = fmt.Sprintf("sip:%s@%s", d.ChannelID, _sysinfo.Region)
+				channel.Status = transDeviceStatus(d.Status)
+				channel.MeMo = d.MeMo
+				channel.Name = d.Name
+				channel.Manufacturer = d.Manufacturer
+				channel.Model = d.Model
+				channel.Owner = d.Owner
+				channel.CivilCode = d.CivilCode
+				// Address ip地址
+				channel.Address = d.Address
+				channel.Parental = d.Parental
+				channel.SafetyWay = d.SafetyWay
+				channel.RegisterWay = d.RegisterWay
+				channel.Secrecy = d.Secrecy
+				channel.Longitude = d.Longitude
+				channel.Latitude = d.Latitude
+				db.Save(db.DBClient, &channel)
+				//go notify(notifyChannelsActive(channel))
 			}
 		}
 	}
@@ -305,4 +379,40 @@ func transDeviceStatus(status string) string {
 		return v
 	}
 	return status
+}
+
+func CheckOnlineDeviceStatus() {
+	var arrKeys = make([]any, 0)
+	_activeDevices.Range(func(key, value any) bool {
+		//byteStr, _ := json.Marshal(value)
+		//fmt.Println("CheckDeviceOffline key: ", key, " value: ", string(byteStr))
+		deviceId, _ := utils.ToString(key)
+		device := value.(Devices) //Devices{DeviceID: deviceId}
+		keepAliveDuration := time.Now().Unix() - device.ActiveAt
+		logrus.Debugln("CheckOnlineDeviceStatus deviceId:", deviceId, ", active:",
+			device.ActiveAt, ",keepAliveDuration:", keepAliveDuration)
+		if keepAliveDuration > 90 {
+			logrus.Errorln("CheckOnlineDeviceStatus deviceId alive timeout, deviceId:", deviceId)
+			device.ActiveAt = -1
+			device.OfflineAt = time.Now().Unix()
+			db.Save(db.DBClient, &device)
+			_activeDevices.Delete(deviceId)
+		} else {
+			logrus.Errorln("CheckOnlineDeviceStatus deviceId alive, deviceId:", deviceId)
+			arrKeys = append(arrKeys, key)
+		}
+		//if err := db.Get(db.DBClient, &device); err == nil {
+		//
+		//} else {
+		//	logrus.Errorln("CheckOnlineDeviceStatus deviceId not found,deviceId:", deviceId)
+		//	device.ActiveAt = -1
+		//	device.OfflineAt = time.Now().Unix()
+		//	db.Save(db.DBClient, &device)
+		//	_activeDevices.Delete(deviceId)
+		//}
+
+		return true
+	})
+
+	logrus.Errorln("CheckOnlineDeviceStatus onlineDevice count:", len(arrKeys))
 }

@@ -35,20 +35,21 @@ type HeadersBuilder struct {
 func NewHeaderBuilder() *HeadersBuilder {
 	callID := CallID(utils.RandString(32))
 	maxForwards := MaxForwards(70)
-	userAgent := UserAgentHeader("GoSIP")
+	userAgent := UserAgentHeader("anySIP")
 	return &HeadersBuilder{
 		protocol:        "SIP",
 		protocolVersion: "2.0",
-		host:            "localhost",
-		transport:       "UDP",
-		cseq:            &CSeq{SeqNo: 1},
-		callID:          &callID,
-		via:             make(ViaHeader, 0),
-		userAgent:       &userAgent,
-		maxForwards:     &maxForwards,
-		generic:         make(map[string]Header),
-		allow:           defaultAllowMethods,
-		supported:       &SupportedHeader{Options: []string{}},
+		//host:            "192.168.1.254:7036",
+		host:        "localhost",
+		transport:   "UDP",
+		cseq:        &CSeq{SeqNo: 1},
+		callID:      &callID,
+		via:         make(ViaHeader, 0),
+		userAgent:   &userAgent,
+		maxForwards: &maxForwards,
+		generic:     make(map[string]Header),
+		allow:       defaultAllowMethods,
+		supported:   &SupportedHeader{Options: []string{}},
 	}
 }
 
@@ -648,7 +649,7 @@ func (params *headerParams) Equals(other interface{}) bool {
 
 // ==================   ContentLengthHeader   ================
 
-//ContentLength ContentLength header
+// ContentLength ContentLength header
 type ContentLength uint32
 
 func (contentLength ContentLength) String() string {

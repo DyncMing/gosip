@@ -17,17 +17,17 @@ type RequestMethod string
 // It's nicer to avoid using raw strings to represent methods, so the following standard
 // method names are defined here as constants for convenience.
 const (
-	INVITE   RequestMethod = "INVITE"
-	ACK      RequestMethod = "ACK"
-	CANCEL   RequestMethod = "CANCEL"
-	BYE      RequestMethod = "BYE"
-	REGISTER RequestMethod = "REGISTER"
-	OPTIONS  RequestMethod = "OPTIONS"
-	// SUBSCRIBE RequestMethod = "SUBSCRIBE"
-	// NOTIFY  RequestMethod = "NOTIFY"
-	// REFER   RequestMethod = "REFER"
-	INFO    RequestMethod = "INFO"
-	MESSAGE RequestMethod = "MESSAGE"
+	INVITE    RequestMethod = "INVITE"
+	ACK       RequestMethod = "ACK"
+	CANCEL    RequestMethod = "CANCEL"
+	BYE       RequestMethod = "BYE"
+	REGISTER  RequestMethod = "REGISTER"
+	OPTIONS   RequestMethod = "OPTIONS"
+	SUBSCRIBE RequestMethod = "SUBSCRIBE"
+	NOTIFY    RequestMethod = "NOTIFY"
+	REFER     RequestMethod = "REFER"
+	INFO      RequestMethod = "INFO"
+	MESSAGE   RequestMethod = "MESSAGE"
 )
 
 // Message introduces common SIP message RFC 3261 - 7.
@@ -149,7 +149,7 @@ func (msg *message) SetBody(body []byte, setContentLength bool) {
 	}
 }
 
-//Transport  Transport
+// Transport  Transport
 func (msg *message) Transport() string {
 	if viaHop, ok := msg.ViaHop(); ok {
 		return viaHop.Transport
@@ -178,7 +178,7 @@ func (msg *message) SetDestination(dest net.Addr) {
 }
 
 // URI  A SIP or SIPS URI, including all params and URI header params.
-//noinspection GoNameStartsWithPackageName
+// noinspection GoNameStartsWithPackageName
 type URI struct {
 	// True if and only if the URI is a SIPS URI.
 	FIsEncrypted bool

@@ -27,7 +27,9 @@ func Start() {
 
 	srv = sip.NewServer()
 	srv.RegistHandler(sip.REGISTER, handlerRegister)
+	//srv.RegistHandler(sip.REGISTER, handlerUnAuthorizationRegister)
 	srv.RegistHandler(sip.MESSAGE, handlerMessage)
+	//srv.RegistHandler(sip.SUBSCRIBE, handlerSubscribe)
 	go srv.ListenUDPServer(config.UDP)
 }
 
@@ -65,18 +67,19 @@ func LoadSYSInfo() {
 
 	// init sysinfo
 	_sysinfo = &m.SysInfo{}
-	if err := db.Get(db.DBClient, _sysinfo); err != nil {
-		if db.RecordNotFound(err) {
-			//  初始不存在
-			_sysinfo = m.DefaultInfo()
-
-			if err = db.Create(db.DBClient, _sysinfo); err != nil {
-				logrus.Fatalf("1 init sysinfo err:%v", err)
-			}
-		} else {
-			logrus.Fatalf("2 init sysinfo err:%v", err)
-		}
-	}
+	//if err := db.Get(db.DBClient, _sysinfo); err != nil {
+	//	if db.RecordNotFound(err) {
+	//		//  初始不存在
+	//		_sysinfo = m.DefaultInfo()
+	//
+	//		if err = db.Create(db.DBClient, _sysinfo); err != nil {
+	//			logrus.Fatalf("1 init sysinfo err:%v", err)
+	//		}
+	//	} else {
+	//		logrus.Fatalf("2 init sysinfo err:%v", err)
+	//	}
+	//}
+	_sysinfo = m.DefaultInfo()
 	m.MConfig.GB28181 = _sysinfo
 
 	uri, _ := sip.ParseSipURI(fmt.Sprintf("sip:%s@%s", _sysinfo.LID, _sysinfo.Region))
@@ -84,9 +87,9 @@ func LoadSYSInfo() {
 		DeviceID: _sysinfo.LID,
 		Region:   _sysinfo.Region,
 		addr: &sip.Address{
-			DisplayName: sip.String{Str: "sipserver"},
-			URI:         &uri,
-			Params:      sip.NewParams(),
+			//DisplayName: sip.String{Str: "anySIPService"},
+			URI:    &uri,
+			Params: sip.NewParams(),
 		},
 	}
 
