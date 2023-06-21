@@ -30,7 +30,8 @@ func Start() {
 	//srv.RegistHandler(sip.REGISTER, handlerUnAuthorizationRegister)
 	srv.RegistHandler(sip.MESSAGE, handlerMessage)
 	//srv.RegistHandler(sip.SUBSCRIBE, handlerSubscribe)
-	go srv.ListenUDPServer(config.UDP)
+	go srv.ListenUDPServer(":" + config.Port)
+	go srv.ListenTCPServer(":" + config.Port)
 }
 
 // MODDEBUG MODDEBUG

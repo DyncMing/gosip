@@ -194,7 +194,9 @@ func parserDevicesFromRequest(req *sip.Request) (Devices, bool) {
 
 // 获取设备信息（注册设备）
 func sipDeviceInfo(to Devices) {
-	hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//	Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
+	hb := sip.NewProtocolHeaderBuilder(to.TransPort, config.GetHostUri()).SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
 		Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
 	}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.MESSAGE)
 	req := sip.NewRequest("", sip.MESSAGE, to.addr.URI, sip.DefaultSipVersion, hb.Build(), sip.GetDeviceInfoXML(to.DeviceID))
@@ -213,7 +215,12 @@ func sipDeviceInfo(to Devices) {
 
 // sipCatalog 获取注册设备包含的列表
 func sipCatalog(to Devices) {
-	hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//NewProtocolHeaderBuilder
+	//hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//	Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
+	//}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.MESSAGE)
+
+	hb := sip.NewProtocolHeaderBuilder(to.TransPort, config.GetHostUri()).SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
 		Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
 	}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.MESSAGE)
 
@@ -239,7 +246,10 @@ func sipCatalog(to Devices) {
 
 // sipDeviceBasicConfig 获取注册设备包含的列表
 func sipConfigDownload(to Devices) {
-	hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//	Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
+
+	hb := sip.NewProtocolHeaderBuilder(to.TransPort, config.GetHostUri()).SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
 		Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
 	}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.MESSAGE)
 	req := sip.NewRequest("", sip.MESSAGE, to.addr.URI, sip.DefaultSipVersion, hb.Build(), sip.GetConfigDownloadInfoXML(to.DeviceID))
@@ -258,7 +268,9 @@ func sipConfigDownload(to Devices) {
 
 // sipMobilePosition 获取移动设备Gps位置信息
 func sipMobilePosition(to Devices) {
-	hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//hb := sip.NewHeaderBuilder().SetTo(to.addr).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
+	//	Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
+	hb := sip.NewProtocolHeaderBuilder(to.TransPort, config.GetHostUri()).SetFrom(_serverDevices.addr).AddVia(&sip.ViaHop{
 		Params: sip.NewParams().Add("branch", sip.String{Str: sip.GenerateBranch()}),
 	}).SetContentType(&sip.ContentTypeXML).SetMethod(sip.SUBSCRIBE)
 	req := sip.NewRequest("", sip.SUBSCRIBE, to.addr.URI, sip.DefaultSipVersion, hb.Build(), sip.GetMobilePositionInfoXML(to.DeviceID))

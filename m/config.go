@@ -17,7 +17,8 @@ type Config struct {
 	MOD       string            `json:"mod" yaml:"mod" mapstructure:"mod"`
 	DB        db.Config         `json:"database" yaml:"database" mapstructure:"database"`
 	LogLevel  string            `json:"logger" yaml:"logger" mapstructure:"logger"`
-	UDP       string            `json:"udp" yaml:"udp" mapstructure:"udp"`
+	Port      string            `json:"port" yaml:"port" mapstructure:"port"`
+	Host      string            `json:"host" yaml:"host" mapstructure:"host"`
 	API       string            `json:"api" yaml:"api" mapstructure:"api"`
 	Secret    string            `json:"secret" yaml:"secret" mapstructure:"secret"`
 	Media     MediaServer       `json:"media" yaml:"media" mapstructure:"media"`
@@ -26,6 +27,10 @@ type Config struct {
 	GB28181   *SysInfo          `json:"gb28181" yaml:"gb28181" mapstructure:"gb28181"`
 	Notify    map[string]string `json:"notify" yaml:"notify" mapstructure:"notify"`
 	NotifyMap map[string]string
+}
+
+func (config Config) GetHostUri() string {
+	return config.Host + ":" + config.Port
 }
 
 type RecordCfg struct {

@@ -2,11 +2,12 @@ mod: debug
 database:
   dialect: mysql # mysql postgresql sqllite
   url: root:ming.niu@tcp(192.168.1.111:3306)/gosip?charset=utf8&parseTime=True&loc=Local # 数据库地址
-udp: 0.0.0.0:7036 # sip服务器udp端口
+host: 192.168.199.195 #sip服务期IP地址
+port: 7036 # sip服务器端口
 api: 0.0.0.0:8090 # sip服务 restfulapi 端口
 secret: z9hG4bK1233983766 # restful接口验证key 验证请求使用
 #logger: debug #trace
-logger: info
+logger: trace
 media:
   restful: http://192.168.1.108:80 # media 服务器restfulapi地址
   http: http://192.168.1.108:80  # media 服务器 http请求地址
@@ -21,7 +22,7 @@ stream:
 gb28181: # gb28181 域，系统id，用户id，通道id，用户数量，初次运行使用配置，之后保存数据库，如果数据库不存在使用配置文件内容
   lid:    44010200492000000001 #"37070000082008000001" # 系统ID
   region: 4401020049 #3707000008           # 系统域
-  did:    37070000081118       # 设备前缀
+  did:    37070000081118       # 设备前缀37070000081118000001
   cid:    37070000081318       # 通道前缀
   dnum:   0 # 设备id = did + dnum
   cnum:   0 # 通道id = cid + cnum

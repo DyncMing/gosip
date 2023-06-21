@@ -40,9 +40,9 @@ func NewServer() *Server {
 	return srv
 }
 
-// func (s *Server) newTX(key string) *Transaction {
-// 	return s.txs.newTX(key, s.conn)
-// }
+//	func (s *Server) newTX(key string) *Transaction {
+//		return s.txs.newTX(key, s.conn)
+//	}
 func (s *Server) getTX(key string) *Transaction {
 	return s.txs.getTX(key)
 }
@@ -81,8 +81,61 @@ func (s *Server) ListenUDPServer(addr string) {
 	for {
 		num, raddr, err = s.conn.ReadFrom(buf)
 		if err != nil {
-			logrus.Errorln("udp.ReadFromUDP err", err)
+			logrus.Errorln("udp.ReadFromUDP err: ", err)
 			continue
+		}
+		//if errors.Is(err, net.ErrClosed) {
+		//	logrus.Errorln("udp.ReadFromUDP closed: ", s.conn.RemoteAddr().String())
+		//	//s.conn.Close()
+		//	//break
+		//} else {
+		//	continue
+		//}
+
+		parser.in <- newPacket(append([]byte{}, buf[:num]...), raddr)
+	}
+}
+
+// ListenTCPServer ListenTCPServer
+func (s *Server) ListenTCPServer(addr string) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
+		logrus.Fatal("net.ResolveUDPAddr err", err, addr)
+	}
+	s.port = NewPort(tcpAddr.Port)
+	s.host, err = utils.ResolveSelfIP()
+	if err != nil {
+		logrus.Fatal("net.ListenTCP resolveIp err", err, addr)
+	}
+	tcp, err := net.ListenTCP("tcp", tcpAddr)
+	if err != nil {
+		logrus.Fatal("net.ListenTCP err:", err, addr)
+	}
+
+	tcpAccept, acceptErr := tcp.AcceptTCP()
+	if acceptErr != nil {
+		logrus.Fatal("tcp.AcceptTCP err:", acceptErr, addr)
+	}
+	s.conn = newTCPConnection(tcpAccept)
+	var (
+		raddr net.Addr
+		num   int
+	)
+	buf := make([]byte, bufferSize)
+	parser := newParser()
+	defer parser.stop()
+	go s.handlerListen(parser.out)
+	for {
+		num, raddr, err = s.conn.ReadFrom(buf)
+		if err != nil {
+			logrus.Errorln("tcp.ReadFromTcp err:", err)
+			//if errors.Is(err, io.EOF) {
+			//	logrus.Errorln("tcp.ReadFromTcp disconnect", s.conn.RemoteAddr().String())
+			//	//s.conn.Close()
+			//	//break
+			//} else {
+			continue
+			//}
 		}
 		parser.in <- newPacket(append([]byte{}, buf[:num]...), raddr)
 	}

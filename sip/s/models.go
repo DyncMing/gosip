@@ -11,6 +11,13 @@ import (
 // DefaultProtocol DefaultProtocol
 var DefaultProtocol = "udp"
 
+var (
+	// TcpProtocolKey tcp 的协议key
+	TcpProtocolKey = "tcpConn"
+	// UdpProtocolKey udp 的协议key
+	UdpProtocolKey = "udpConn"
+)
+
 // DefaultSipVersion DefaultSipVersion
 var DefaultSipVersion = "SIP/2.0"
 

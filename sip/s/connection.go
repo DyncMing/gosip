@@ -3,13 +3,12 @@ package sip
 import (
 	"bufio"
 	"bytes"
+	"github.com/panjjo/gosip/utils"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net"
 	"strings"
 	"time"
-
-	"github.com/panjjo/gosip/utils"
-	"github.com/sirupsen/logrus"
 )
 
 // Packet Packet
@@ -20,7 +19,11 @@ type Packet struct {
 }
 
 func newPacket(data []byte, raddr net.Addr) Packet {
-	logrus.Traceln("receive new packet,from:", raddr.String(), string(data))
+	if nil == raddr {
+		logrus.Traceln("receive new packet,from:", string(data))
+	} else {
+		logrus.Traceln("receive new packet,from:", raddr.String(), string(data))
+	}
 	return Packet{
 		reader:     bufio.NewReader(bytes.NewReader(data)),
 		raddr:      raddr,
@@ -84,7 +87,17 @@ func newUDPConnection(baseConn net.Conn) Connection {
 		baseConn: baseConn,
 		laddr:    baseConn.LocalAddr(),
 		raddr:    baseConn.RemoteAddr(),
-		logKey:   "udpConnection",
+		logKey:   UdpProtocolKey,
+	}
+	return conn
+}
+
+func newTCPConnection(baseConn net.Conn) Connection {
+	conn := &connection{
+		baseConn: baseConn,
+		laddr:    baseConn.LocalAddr(),
+		raddr:    baseConn.RemoteAddr(),
+		logKey:   TcpProtocolKey,
 	}
 	return conn
 }
@@ -104,12 +117,22 @@ func (conn *connection) Read(buf []byte) (int, error) {
 }
 
 func (conn *connection) ReadFrom(buf []byte) (num int, raddr net.Addr, err error) {
-	num, raddr, err = conn.baseConn.(net.PacketConn).ReadFrom(buf)
-	if err != nil {
-		return num, raddr, utils.NewError(err, conn.logKey, "readfrom", conn.baseConn.LocalAddr().String(), raddr.String())
+	if conn.logKey == UdpProtocolKey {
+		num, raddr, err = conn.baseConn.(net.PacketConn).ReadFrom(buf)
+		if err != nil {
+			return num, raddr, utils.NewError(err, conn.logKey, ",readfrom,", conn.baseConn.LocalAddr().String(), raddr.String())
+		}
+		logrus.Infof("readFrom len: %d , addr: %s -> %s \n %s", num, raddr, conn.LocalAddr(), string(buf[:num]))
+		return num, raddr, err
+	} else {
+		raddr = conn.baseConn.RemoteAddr()
+		num, err = conn.baseConn.(net.Conn).Read(buf)
+		if err != nil {
+			return num, raddr, err //utils.NewError(err, conn.logKey, "readfrom", conn.baseConn.LocalAddr().String(), raddr.String())
+		}
+		logrus.Infof("readFrom len: %d , addr: %s -> %s \n %s", num, raddr, conn.LocalAddr(), string(buf[:num]))
+		return num, raddr, err
 	}
-	logrus.Infof("readFrom len: %d , addr: %s -> %s \n %s", num, raddr, conn.LocalAddr(), string(buf[:num]))
-	return num, raddr, err
 }
 
 func (conn *connection) Write(buf []byte) (int, error) {
@@ -126,12 +149,22 @@ func (conn *connection) Write(buf []byte) (int, error) {
 }
 
 func (conn *connection) WriteTo(buf []byte, raddr net.Addr) (num int, err error) {
-	num, err = conn.baseConn.(net.PacketConn).WriteTo(buf, raddr)
-	if err != nil {
-		return num, utils.NewError(err, conn.logKey, "writeTo", conn.baseConn.LocalAddr().String(), raddr.String())
+	if conn.logKey == UdpProtocolKey {
+		num, err = conn.baseConn.(net.PacketConn).WriteTo(buf, raddr)
+		if err != nil {
+			return num, utils.NewError(err, conn.logKey, "writeTo", conn.baseConn.LocalAddr().String(), raddr.String())
+		}
+		logrus.Tracef("writeTo %d , %s -> %s \n %s", num, conn.baseConn.LocalAddr(), raddr.String(), string(buf[:num]))
+		return num, err
+	} else {
+		raddr = conn.baseConn.RemoteAddr()
+		num, err = conn.baseConn.(net.Conn).Write(buf)
+		if err != nil {
+			return num, utils.NewError(err, conn.logKey, "writeTo", conn.baseConn.LocalAddr().String(), raddr.String())
+		}
+		logrus.Tracef("writeTo %d , %s -> %s \n %s", num, conn.baseConn.LocalAddr(), conn.baseConn.RemoteAddr(), string(buf[:num]))
+		return num, err
 	}
-	logrus.Tracef("writeTo %d , %s -> %s \n %s", num, conn.baseConn.LocalAddr(), raddr.String(), string(buf[:num]))
-	return num, err
 }
 
 func (conn *connection) LocalAddr() net.Addr {

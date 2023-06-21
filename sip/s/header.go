@@ -53,6 +53,27 @@ func NewHeaderBuilder() *HeadersBuilder {
 	}
 }
 
+// NewHeaderBuilder NewHeaderBuilder
+func NewProtocolHeaderBuilder(protocol, host string) *HeadersBuilder {
+	callID := CallID(utils.RandString(32))
+	maxForwards := MaxForwards(70)
+	userAgent := UserAgentHeader("anySIP")
+	return &HeadersBuilder{
+		protocol:        "SIP",
+		protocolVersion: "2.0",
+		host:            host,
+		transport:       protocol,
+		cseq:            &CSeq{SeqNo: 1},
+		callID:          &callID,
+		via:             make(ViaHeader, 0),
+		userAgent:       &userAgent,
+		maxForwards:     &maxForwards,
+		generic:         make(map[string]Header),
+		allow:           defaultAllowMethods,
+		supported:       &SupportedHeader{Options: []string{}},
+	}
+}
+
 // Build Build
 func (hb *HeadersBuilder) Build() []Header {
 
